@@ -1,0 +1,22 @@
+﻿@inherits LayoutComponentBase
+
+@* The layout renders statically, so navigation.js keeps its theme-toggle listener while the page body is interactive. *@
+<main class="wrap">
+    <section id="application-lab" aria-label="Application navigation">
+        <nav class="student-nav" aria-label="Application sections">
+            <a href="/guide.html#learning">What you will learn</a>
+            <a href="/guide.html#run-guide">How to run</a>
+            <a href="/architecture.html">Architecture &amp; workflow</a>
+            <a href="/#application-lab">Application lab</a>
+            <button id="student-theme-toggle" type="button" aria-pressed="false">Switch to dark mode</button>
+        </nav>
+    </section>
+    @Body
+    <footer>CONFIGURE → RUN → VERIFY · Student sample application</footer>
+</main>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

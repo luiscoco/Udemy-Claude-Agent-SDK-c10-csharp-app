@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1632" height="1288" viewBox="0 0 1632 1288" role="img" aria-labelledby="title desc">
+<title id="title">C10 UML sequence workflow (Blazor / .NET 10)</title>
+<desc id="desc">1. Select a scenario and edit inputs 2. ExperimentGate: one experiment at a time 3. Run(input) · validate queued messages 4. Outcome, summary, steps, evidence 5. Append to .lab-data/runs.jsonl 6. Render evidence over the SignalR circuit 7. Run queue live 8. Run(messages, competingWriter) 9. sessions.create · text-only, 10 USD budget 10. Open the event stream before any send 11. send user.message → accepted event ID 12. user.message · queued, then processed 13. agent.message · the turn&#x27;s answer 14. status_idle · end_turn → advance 15. Explained timeline steps, then the outcome 16. Inspect each turn and its evidence</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#087fff"/></marker></defs>
+<rect width="100%" height="100%" rx="22" fill="#fff"/>
+<text x="40" y="54" font-family="Arial" font-weight="700" font-size="30" fill="#090d3b">C10 · Multi-turn Sessions and Message Queues · Blazor / .NET 10</text>
+<rect x="38" y="92" width="246" height="62" rx="14" fill="#087fff"/>
+<text x="161" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">Student</text>
+<path d="M161 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<rect x="300" y="92" width="246" height="62" rx="14" fill="#8838ff"/>
+<text x="423" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">Home.razor (circuit)</text>
+<path d="M423 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<rect x="562" y="92" width="246" height="62" rx="14" fill="#00a36c"/>
+<text x="685" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">C10Lesson</text>
+<path d="M685 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<rect x="824" y="92" width="246" height="62" rx="14" fill="#ff8900"/>
+<text x="947" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">Run journal</text>
+<path d="M947 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<rect x="1086" y="92" width="246" height="62" rx="14" fill="#e5484d"/>
+<text x="1209" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">LiveQueue + TurnTracker</text>
+<path d="M1209 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<rect x="1348" y="92" width="246" height="62" rx="14" fill="#090d3b"/>
+<text x="1471" y="131" text-anchor="middle" fill="white" font-size="19" font-family="Arial" font-weight="700">Managed Agents session</text>
+<path d="M1471 154 V1218" stroke="#b1c9e4" stroke-dasharray="6 6"/>
+<path d="M161 208 H417" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="173" y="198" font-family="Arial" font-size="17" fill="#090d3b">1. Select a scenario and edit inputs</text>
+<path d="M423 248 h70 v22 h-66" fill="none" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="503" y="264" font-family="Arial" font-size="17" fill="#090d3b">2. ExperimentGate: one experiment at a time</text>
+<path d="M423 316 H679" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="435" y="306" font-family="Arial" font-size="17" fill="#090d3b">3. Run(input) · validate queued messages</text>
+<path d="M685 370 H429" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="435" y="360" font-family="Arial" font-size="17" fill="#090d3b">4. Outcome, summary, steps, evidence</text>
+<path d="M423 424 H941" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="435" y="414" font-family="Arial" font-size="17" fill="#090d3b">5. Append to .lab-data/runs.jsonl</text>
+<path d="M423 478 H167" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="173" y="468" font-family="Arial" font-size="17" fill="#090d3b">6. Render evidence over the SignalR circuit</text>
+<path d="M161 532 H417" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="173" y="522" font-family="Arial" font-size="17" fill="#090d3b">7. Run queue live</text>
+<path d="M423 586 H1203" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="435" y="576" font-family="Arial" font-size="17" fill="#090d3b">8. Run(messages, competingWriter)</text>
+<path d="M1209 640 H1465" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1221" y="630" font-family="Arial" font-size="17" fill="#090d3b">9. sessions.create · text-only, 10 USD budget</text>
+<path d="M1209 694 H1465" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1221" y="684" font-family="Arial" font-size="17" fill="#090d3b">10. Open the event stream before any send</text>
+<text x="1092" y="748" font-family="Arial" font-weight="700" font-size="17" fill="#e5484d">loop · for each queued message</text>
+<path d="M1209 802 H1465" stroke="#087fff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1221" y="792" font-family="Arial" font-size="17" fill="#090d3b">11. send user.message → accepted event ID</text>
+<path d="M1471 856 H1215" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="1221" y="846" font-family="Arial" font-size="17" fill="#090d3b">12. user.message · queued, then processed</text>
+<path d="M1471 910 H1215" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="1221" y="900" font-family="Arial" font-size="17" fill="#090d3b">13. agent.message · the turn&#x27;s answer</text>
+<path d="M1471 964 H1215" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="1221" y="954" font-family="Arial" font-size="17" fill="#090d3b">14. status_idle · end_turn → advance</text>
+<path d="M1082 988 H1598" stroke="#e5484d" stroke-dasharray="8 5"/>
+<text x="1092" y="1018" font-family="Arial" font-style="italic" font-size="17" fill="#a13a20">alt · foreign user.message ID → conflict, stop sending</text>
+<rect x="1082" y="726" width="516" height="319" rx="10" fill="none" stroke="#e5484d" stroke-width="2"/>
+<path d="M1209 1072 H429" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="435" y="1062" font-family="Arial" font-size="17" fill="#090d3b">15. Explained timeline steps, then the outcome</text>
+<path d="M423 1126 H167" stroke="#087fff" stroke-width="2.5" stroke-dasharray="9 6" marker-end="url(#arrow)"/>
+<text x="173" y="1116" font-family="Arial" font-size="17" fill="#090d3b">16. Inspect each turn and its evidence</text>
+<text x="40" y="1262" font-family="Arial" font-size="18" fill="#3a5578">LOCAL: authored experiment → evidence → journal. LIVE QUEUE: one writer, one message per turn, advance only on a settled idle.</text>
+</svg>

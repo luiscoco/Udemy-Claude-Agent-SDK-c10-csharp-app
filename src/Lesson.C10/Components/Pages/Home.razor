@@ -1,0 +1,340 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@using System.Text.RegularExpressions
+@using Lesson.C10.Lessons
+@using Lesson.C10.Services
+@inject ILesson Lesson
+@inject LiveCommentary Live
+@inject LiveQueue Queue
+@inject ExperimentGate Gate
+@inject RunJournal Journal
+
+<PageTitle>C@(Lesson.Number.ToString("D2")) · @Lesson.Title</PageTitle>
+
+<header><div class="brand">How <span>Claude Managed Agents</span> Works</div><span class="badge">CONCEPT @Lesson.Number.ToString("D2") / 60</span></header>
+<section class="hero">
+    <div><p class="eyebrow">LEARN BY RUNNING THE EXPERIMENT</p><h1>@Lesson.Title</h1><p class="lead">@Lesson.Description</p></div>
+    <img src="/astronaut.png" alt="" class="astronaut">
+</section>
+
+<section class="card">
+    <p class="eyebrow">THE THREE IDEAS IN THIS LESSON</p>
+    <h2>What a message queue must guarantee</h2>
+    <div class="concepts">
+        @foreach (var concept in Enum.GetValues<Concept>())
+        {
+            <div class="concept concept-@concept"><b>@Teaching.Label(concept)</b><p>@Teaching.Explain(concept)</p></div>
+        }
+    </div>
+</section>
+
+<section class="card" id="lab-path">
+    <p class="eyebrow">YOUR LAB, STEP BY STEP</p>
+    <h2>Do these four runs in order</h2>
+    <p>Steps 1 and 2 run the rules locally with authored data. Steps 3 and 4 run the same queue against a real Managed Agents session, so you can watch each rule work on real events.@if (!Queue.Configured) { <text> Steps 3 and 4 need your API key, agent ID and environment ID in .env.</text> }</p>
+    <ol class="lab-steps">
+        @foreach (var step in LabSteps)
+        {
+            var done = _done.Contains(step.Number);
+            var next = !done && step.Number == NextStep;
+            <li class="lab-step @(done ? "done" : next ? "next" : "")">
+                <span class="lab-mark">@(done ? "✓" : step.Number.ToString())</span>
+                <div>
+                    <b>@step.Title</b> <small>@(step.Mode == Mode.Local ? "local · free" : "live session · uses the API")</small>
+                    <p>@step.Watch</p>
+                    <button class="lab-run" disabled="@(_running || (step.Mode != Mode.Local && !Queue.Configured))" @onclick="() => RunLabStep(step)">
+                        @(done ? "Run again" : "Load and run") ↗
+                    </button>
+                </div>
+            </li>
+        }
+    </ol>
+</section>
+
+<div class="grid">
+    <article class="card">
+        <p class="eyebrow">THE EXPERIMENT</p>
+        <h2>Try the workflow</h2>
+        <label>Scenario
+            <select @onchange="SelectScenario">
+                @for (var i = 0; i < Lesson.Cases.Count; i++)
+                {
+                    <option value="@i" selected="@(i == _scenario)">@Lesson.Cases[i].Label</option>
+                }
+            </select>
+        </label>
+        <div id="fields">
+            @foreach (var field in _fields)
+            {
+                <label>@field.Label
+                    @switch (field.Kind)
+                    {
+                        case FieldKind.Flag: <input type="checkbox" @bind="field.Checked" /> break;
+                        case FieldKind.Number: <input type="number" @bind="field.Text" /> break;
+                        case FieldKind.Multiline: <textarea rows="4" @bind="field.Text"></textarea> break;
+                        default: <input type="text" @bind="field.Text" /> break;
+                    }
+                </label>
+            }
+        </div>
+        <button disabled="@_running" @onclick="() => Execute(Mode.Local)">Run local experiment ↗</button>
+        <p id="status" role="status">@_status</p>
+    </article>
+    <article class="card results">
+        <div class="result-head"><h2>Inspect the result</h2><span class="badge">LOCAL HOST</span></div>
+        @if (_result is null)
+        {
+            <p id="empty">Run a scenario to see its outcome, evidence, and execution steps.</p>
+        }
+        else
+        {
+            <div>
+                <strong class="outcome" data-state="@Core.Format(_result.Outcome)">@Core.Format(_result.Outcome)</strong>
+                <p>@_result.Summary</p>
+                <p class="meaning"><b>What this means:</b> @LocalMeaning(_result.Outcome)</p>
+                <h3>Execution steps</h3>
+                <ol id="steps">@foreach (var step in _result.Steps) { <li>@step</li> }</ol>
+                @* A fresh @key per run lets Prism rewrite the block without fighting Blazor's diff. *@
+                <details open><summary>Structured evidence</summary><pre id="evidence" @key="_runId">@_result.Evidence.ToJsonString(Core.Json)</pre></details>
+            </div>
+        }
+    </article>
+</div>
+
+<section class="note"><strong>Experiment scope</strong><p id="scope">@Lesson.Scope</p></section>
+
+<section class="card" id="live-queue">
+    <p class="eyebrow">LIVE SESSION · STEPS 3 AND 4</p>
+    <h2>Run the queue in a real session</h2>
+    <p>The scenario's messages go, one at a time, to a single text-only Managed Agents session. Watch the timeline: every line is a real event from the session, explained as it arrives. API use may incur charges. Credentials stay on the server.</p>
+    @if (_timeline.Count == 0)
+    {
+        <details open><summary>What will happen</summary>
+            <ol class="preview">
+                <li>The app creates <b>one</b> session and opens its event stream <b>before</b> sending anything.</li>
+                <li>It sends message 1 and keeps the <b>event ID</b> the server returns as that command's receipt.</li>
+                <li>It waits until the stream shows that ID processed, Claude's answer, and an <b>idle with end_turn</b>.</li>
+                <li>Only then does it send message 2, and the same rules apply.</li>
+                <li>With <b>Concurrent Input</b> checked, a second writer posts into the session after message 1. The queue must notice and stop.</li>
+            </ol>
+        </details>
+    }
+    <button disabled="@(_running || !Queue.Configured)" @onclick="() => Execute(Mode.Queue)">Run queue live ↗</button>
+    @if (_lastMode == Mode.Queue) { <p role="status">@_status</p> }
+    @if (_timeline.Count > 0)
+    {
+        <h3>What is happening, step by step</h3>
+        <ol class="timeline" aria-live="polite">
+            @foreach (var step in _timeline)
+            {
+                <li class="tl tl-@step.Tone.ToString().ToLowerInvariant()">
+                    <span class="tl-num">@step.Number</span>
+                    <div><span class="chip concept-@step.Concept">@Teaching.Label(step.Concept)</span><b>@step.Title</b><p>@step.Detail</p></div>
+                </li>
+            }
+            @if (_running && _lastMode == Mode.Queue) { <li class="tl tl-wait"><span class="tl-num">…</span><div><b>Waiting for the next event</b></div></li> }
+        </ol>
+    }
+    @if (_queue is not null && !_running)
+    {
+        <div>
+            <strong class="outcome" data-state="@Core.Format(_queue.Outcome)">@Core.Format(_queue.Outcome)</strong>
+            <p>@_queue.Summary</p>
+            <p class="meaning"><b>What this shows:</b> @LiveMeaning(_queue)</p>
+            <h3>Turns</h3>
+            <ol id="queue-turns">
+                @foreach (var receipt in _queue.Receipts)
+                {
+                    <li><b>@receipt.Message</b> → @receipt.Status<br><small>@receipt.CommandId · @receipt.UserEventId</small>@if (receipt.Answer.Length > 0) { <p>@receipt.Answer</p> }</li>
+                }
+            </ol>
+            @if (_queue.ForeignUserEventId is not null) { <p>Foreign user event: <code>@_queue.ForeignUserEventId</code></p> }
+            <details><summary>Live queue evidence</summary><pre id="queue-evidence" @key="_queue">@JsonSerializer.Serialize(_queue, Core.Json)</pre></details>
+        </div>
+    }
+</section>
+
+<section class="card">
+    <p class="eyebrow">OPTIONAL · ASK CLAUDE</p>
+    <h2>Have Claude explain the local result</h2>
+    <p>This creates a separate text-only Managed Agents session that explains the local result in three sentences. It does not run the queue, certify the experiment or test external integrations. API use may incur charges.</p>
+    <button disabled="@(_running || !Live.Configured)" @onclick="() => Execute(Mode.Commentary)">Request live commentary ↗</button>
+    @if (_lastMode == Mode.Commentary) { <p role="status">@_status</p> }
+    @if (_live is not null)
+    {
+        <div>
+            <p id="live-answer">@(string.IsNullOrEmpty(_live.Answer) ? "No answer text was observed." : _live.Answer)</p>
+            <details><summary>Live session evidence</summary><pre id="live-evidence" @key="_live">@JsonSerializer.Serialize(_live, Core.Json)</pre></details>
+        </div>
+    }
+</section>
+
+<section class="card source">
+    <h2>How it works</h2>
+    <p>The C# below is the actual lesson implementation executed by the local server. The <a href="/architecture.html">Architecture &amp; workflow</a> page walks through the live queue code.</p>
+    <details><summary>Read Lessons/C10Lesson.cs</summary><pre id="code"><code class="language-clike">@_source</code></pre></details>
+</section>
+
+@code {
+    enum FieldKind { Text, Multiline, Number, Flag, Json }
+    enum Mode { Local, Queue, Commentary }
+
+    sealed class Field
+    {
+        public required string Key { get; init; }
+        public required string Label { get; init; }
+        public required FieldKind Kind { get; init; }
+        public string Text { get; set; } = "";
+        public bool Checked { get; set; }
+    }
+
+    sealed record LabStep(int Number, string Title, Mode Mode, int Scenario, Outcome Expected, string Watch);
+
+    static readonly LabStep[] LabSteps =
+    [
+        new(1, "Run “Two correlated turns” locally", Mode.Local, 0, Outcome.Passed,
+            "Each message gets a command ID and a user event ID, and its status is idle/end_turn. Look closely: in this local run the code writes those receipts itself. Nothing was observed yet."),
+        new(2, "Run “Detect a competing writer” locally", Mode.Local, 1, Outcome.Conflict,
+            "Concurrent Input is checked, so another writer exists. The rules refuse to attribute any turn: the outcome is conflict and turns is 0."),
+        new(3, "Run “Two correlated turns” in a real session", Mode.Queue, 0, Outcome.Passed,
+            "Follow the timeline. Message 2 is sent only after “Idle with end_turn”. Turn 2's answer should name Aurora, which shows both turns share one session's history."),
+        new(4, "Run “Detect a competing writer” in a real session", Mode.Queue, 1, Outcome.Conflict,
+            "A second writer posts into the session. The queue sees an event ID it never sent, explains why that is dangerous, and stops before message 2."),
+    ];
+
+    static readonly string _source = ReadSource();
+    int _scenario;
+    List<Field> _fields = [];
+    bool _running;
+    Mode _lastMode = Mode.Local;
+    string _status = "Local experiment ready. Choose a scenario or edit its inputs.";
+    Result? _result;
+    string? _runId;
+    LiveResult? _live;
+    LiveQueueResult? _queue;
+    readonly List<TeachingStep> _timeline = [];
+    readonly HashSet<int> _done = [];
+
+    int NextStep => LabSteps.FirstOrDefault(s => !_done.Contains(s.Number))?.Number ?? 0;
+
+    protected override void OnInitialized() => Populate(Lesson.Cases[0].Input);
+
+    static string ReadSource()
+    {
+        using var stream = typeof(Home).Assembly.GetManifestResourceStream("LessonSource")!;
+        return new StreamReader(stream).ReadToEnd();
+    }
+
+    static string LocalMeaning(Outcome outcome) => outcome switch
+    {
+        Outcome.Passed => "with one writer, each queued message was admitted and given a receipt. These receipts are authored by the local code: a real queue must observe the accepted event IDs and the end_turn idle from the session. Step 3 does exactly that.",
+        Outcome.Conflict => "a second writer means you cannot tell which turn an answer belongs to, so no turn is attributed and the queue does not advance. Step 4 shows how a real queue notices this.",
+        _ => "the rules did not produce a settled queue for this input.",
+    };
+
+    static string LiveMeaning(LiveQueueResult result) => result.Outcome switch
+    {
+        Outcome.Passed => $"all {result.Receipts.Count} turns were sent one at a time and each settled before the next. Read the last answer: it can only use earlier turns because they share one session.",
+        Outcome.Conflict => "the stream showed a user event this queue never sent. From that moment no idle or answer could be safely attributed to our command, so the queue stopped instead of guessing. Notice there was no end_turn idle between our answer and the other writer's message.",
+        _ => "a turn did not settle on idle/end_turn, so the queue refused to send the next message.",
+    };
+
+    static string Friendly(string key) => Regex.Replace(key, "([a-z])([A-Z])", "$1 $2") is var spaced && spaced.Length > 0
+        ? char.ToUpperInvariant(spaced[0]) + spaced[1..] : spaced;
+
+    void SelectScenario(ChangeEventArgs e) => LoadScenario(int.Parse((string)e.Value!));
+
+    void LoadScenario(int index)
+    {
+        _scenario = index;
+        Populate(Lesson.Cases[index].Input);
+    }
+
+    async Task RunLabStep(LabStep step)
+    {
+        LoadScenario(step.Scenario);
+        await Execute(step.Mode);
+    }
+
+    // Same field mapping as the Node client: objects/lists become JSON textareas, long strings become textareas.
+    void Populate(JsonObject input) => _fields = input.Select(pair => pair.Value switch
+    {
+        JsonValue v when v.TryGetValue(out bool flag) => new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Flag, Checked = flag },
+        JsonValue v when v.TryGetValue(out double number) => new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Number, Text = number.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+        JsonValue v when v.TryGetValue(out string? text) => new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = text.Length > 100 || text.Contains('\n') ? FieldKind.Multiline : FieldKind.Text, Text = text },
+        var node => new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Json, Text = node?.ToJsonString(Core.Json) ?? "null" },
+    }).ToList();
+
+    JsonObject Read()
+    {
+        var input = new JsonObject();
+        foreach (var field in _fields)
+            input[field.Key] = field.Kind switch
+            {
+                FieldKind.Flag => field.Checked,
+                FieldKind.Number => double.Parse(field.Text, System.Globalization.CultureInfo.InvariantCulture),
+                FieldKind.Json => JsonNode.Parse(field.Text),
+                _ => field.Text,
+            };
+        return input;
+    }
+
+    // Ticks a lab step when its mode, scenario and expected outcome all match the run that just finished.
+    void MarkDone(Mode mode, int scenario, Outcome outcome)
+    {
+        foreach (var step in LabSteps.Where(s => s.Mode == mode && s.Scenario == scenario && s.Expected == outcome))
+            _done.Add(step.Number);
+    }
+
+    async Task Execute(Mode mode)
+    {
+        _running = true;
+        _lastMode = mode;
+        var scenario = _scenario;
+        _status = mode switch
+        {
+            Mode.Queue => "Running the queue in a live session, one turn at a time…",
+            Mode.Commentary => "Waiting for the live text-only session…",
+            _ => "Running the local experiment…",
+        };
+        if (mode == Mode.Queue) { _timeline.Clear(); _queue = null; }
+        try
+        {
+            var input = Read();
+            await Gate.Run(async () =>
+            {
+                // The local run validates the inputs before any live session is created.
+                var result = await Lesson.Run(input);
+                if (mode == Mode.Queue)
+                {
+                    var messages = Core.List(input, "messages").Select(m => m!.GetValue<string>()).ToList();
+                    _queue = await Queue.Run(messages, Core.Flag(input, "concurrentInput"), step => InvokeAsync(() =>
+                    {
+                        // Each explained event is pushed to the browser as soon as it arrives.
+                        _timeline.Add(step);
+                        StateHasChanged();
+                    }));
+                    _status = $"Live queue outcome: {Core.Format(_queue.Outcome)}.";
+                    MarkDone(mode, scenario, _queue.Outcome);
+                }
+                else if (mode == Mode.Commentary)
+                {
+                    _live = await Live.Explain(Lesson.Title, result);
+                    _status = $"Live commentary stop reason: {_live.StopReason}.";
+                }
+                else
+                {
+                    _runId = await Journal.Append(Lesson.Number, result);
+                    _result = result;
+                    _status = "Experiment recorded in the local run journal.";
+                    MarkDone(mode, scenario, result.Outcome);
+                }
+                return true;
+            });
+        }
+        catch (Exception error) { _status = error.Message; }
+        finally { _running = false; }
+    }
+}

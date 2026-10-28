@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+.env*
+!.env.example
+.lab-data/
+*.log
+.artifacts/
