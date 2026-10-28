@@ -23,13 +23,13 @@ if (!ManagedAgentSettings.Valid(Environment.GetEnvironmentVariable(&quot;CLAUDE_
         System = &quot;Answer the student&#x27;s question clearly and briefly.&quot;,
         Tools = [], McpServers = [], Skills = [],
     });
-    DotEnv.Save(envPath, &quot;CLAUDE_MANAGED_AGENT_ID&quot;, agent.ID);</code></pre></section><section class="student-section"><h2>UML sequence diagram</h2><p>Read from top to bottom. Columns are participants; arrows are ordered messages. Steps 1–6 are the local experiment; steps 7–16 are the live queue. Open the full-size image or scroll horizontally to read every label.</p><p><a href="/architecture.svg" target="_blank" rel="noopener">Open SVG</a> · <a href="/architecture.svg" download>Download SVG</a> · <a href="/architecture.png" download>Download PNG</a></p><div class="student-diagram"><img src="/architecture.svg" alt="UML sequence diagram showing the local experiment and the live session queue"></div></section><section class="student-section"><h2>Walk through the application step by step</h2><article class="student-step"><h3>1 · Load scenarios and collect input</h3><p>Home.razor is an interactive server component. It turns each scenario input into an editable field and reads the fields back into JSON. Lists and objects are edited as JSON text.</p><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 262</p><pre><code class="language-clike">void Populate(JsonObject input) =&gt; _fields = input.Select(pair =&gt; pair.Value switch
+    DotEnv.Save(envPath, &quot;CLAUDE_MANAGED_AGENT_ID&quot;, agent.ID);</code></pre></section><section class="student-section"><h2>UML sequence diagram</h2><p>Read from top to bottom. Columns are participants; arrows are ordered messages. Steps 1–6 are the local experiment; steps 7–16 are the live queue. Open the full-size image or scroll horizontally to read every label.</p><p><a href="/architecture.svg" target="_blank" rel="noopener">Open SVG</a> · <a href="/architecture.svg" download>Download SVG</a> · <a href="/architecture.png" download>Download PNG</a></p><div class="student-diagram"><img src="/architecture.svg" alt="UML sequence diagram showing the local experiment and the live session queue"></div></section><section class="student-section"><h2>Walk through the application step by step</h2><article class="student-step"><h3>1 · Load scenarios and collect input</h3><p>Home.razor is an interactive server component. It turns each scenario input into an editable field and reads the fields back into JSON. Lists and objects are edited as JSON text.</p><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 266</p><pre><code class="language-clike">void Populate(JsonObject input) =&gt; _fields = input.Select(pair =&gt; pair.Value switch
 {
     JsonValue v when v.TryGetValue(out bool flag) =&gt; new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Flag, Checked = flag },
     JsonValue v when v.TryGetValue(out double number) =&gt; new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Number, Text = number.ToString(System.Globalization.CultureInfo.InvariantCulture) },
     JsonValue v when v.TryGetValue(out string? text) =&gt; new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = text.Length &gt; 100 || text.Contains(&#x27;\n&#x27;) ? FieldKind.Multiline : FieldKind.Text, Text = text },
     var node =&gt; new Field { Key = pair.Key, Label = Friendly(pair.Key), Kind = FieldKind.Json, Text = node?.ToJsonString(Core.Json) ?? &quot;null&quot; },
-}).ToList();</code></pre><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 270</p><pre><code class="language-clike">JsonObject Read()
+}).ToList();</code></pre><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 274</p><pre><code class="language-clike">JsonObject Read()
 {
     var input = new JsonObject();
     foreach (var field in _fields)
@@ -40,7 +40,7 @@ if (!ManagedAgentSettings.Valid(Environment.GetEnvironmentVariable(&quot;CLAUDE_
             FieldKind.Json =&gt; JsonNode.Parse(field.Text),
             _ =&gt; field.Text,
         };
-    return input;</code></pre></article><article class="student-step"><h3>2 · Run on the server, one experiment at a time</h3><p>Button clicks travel over the Blazor SignalR circuit, so there is no public JSON API. The server binds to 127.0.0.1 only. ExperimentGate admits one experiment across all browser tabs, and local results are appended to the run journal.</p><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 306</p><pre><code class="language-clike">await Gate.Run(async () =&gt;
+    return input;</code></pre></article><article class="student-step"><h3>2 · Run on the server, one experiment at a time</h3><p>Button clicks travel over the Blazor SignalR circuit, so there is no public JSON API. The server binds to 127.0.0.1 only. ExperimentGate admits one experiment across all browser tabs, and local results are appended to the run journal.</p><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 310</p><pre><code class="language-clike">await Gate.Run(async () =&gt;
 {
     // The local run validates the inputs before any live session is created.
     var result = await Lesson.Run(input);
@@ -178,7 +178,7 @@ if (!ManagedAgentSettings.Valid(Environment.GetEnvironmentVariable(&quot;CLAUDE_
         hasNext ? $&quot;Only now is it safe to send message {turnNumber + 1}.&quot; : &quot;That was the last queued message.&quot;),
     Observation.Stopped =&gt; new(Concept.Settled, Tone.Stop, $&quot;The turn stopped: {turn.StopReason}&quot;,
         &quot;The session stopped for a reason other than end_turn, so the queue does not advance.&quot;),
-    _ =&gt; null,</code></pre><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 313</p><pre><code class="language-clike">_queue = await Queue.Run(messages, Core.Flag(input, &quot;concurrentInput&quot;), step =&gt; InvokeAsync(() =&gt;
+    _ =&gt; null,</code></pre><p class="student-source">Source: src/Lesson.C10/Components/Pages/Home.razor · starting at line 317</p><pre><code class="language-clike">_queue = await Queue.Run(messages, Core.Flag(input, &quot;concurrentInput&quot;), step =&gt; InvokeAsync(() =&gt;
 {
     // Each explained event is pushed to the browser as soon as it arrives.
     _timeline.Add(step);
