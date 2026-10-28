@@ -70,3 +70,5 @@ html[data-theme=dark] .timeline .tl{background:#11223f} html[data-theme=dark] .t
 html[data-theme=dark] .meaning{background:#132b4f}
 html[data-theme=dark] .lab-step b,html[data-theme=dark] .timeline b,html[data-theme=dark] .meaning b,html[data-theme=dark] #queue-turns b,html[data-theme=dark] .preview b{color:#edf5ff}
 html[data-theme=dark] .chip{color:#fff}
+/* Concept tag on its own line, title below it, so the two never read as one string. */
+.timeline .tl .chip{display:table} .timeline .tl b{display:block}

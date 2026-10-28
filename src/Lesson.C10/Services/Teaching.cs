@@ -39,8 +39,10 @@ public static class Teaching
         "A second writer posted into the same session",
         $"This simulates another browser tab or service sending “{message}”. The queue was not told this event's ID.");
 
+    public static string TurnCount(int turns) => turns switch { 1 => "The only turn", 2 => "Both turns", _ => $"All {turns} turns" };
+
     public static TeachingStep Final(int turns) => new(Concept.Settled, Tone.Good,
-        $"All {turns} turns settled, one at a time, in order",
+        $"{TurnCount(turns)} settled, one at a time, in order",
         "Compare the answers below: a later answer can use earlier turns only because every message went to the same session and no turns overlapped.");
 
     /// Explains one observation, or returns null when the event teaches nothing new (spans, usage, repeats).

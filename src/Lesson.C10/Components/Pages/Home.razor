@@ -236,7 +236,7 @@
 
     static string LiveMeaning(LiveQueueResult result) => result.Outcome switch
     {
-        Outcome.Passed => $"all {result.Receipts.Count} turns were sent one at a time and each settled before the next. Read the last answer: it can only use earlier turns because they share one session.",
+        Outcome.Passed => $"{Teaching.TurnCount(result.Receipts.Count).ToLowerInvariant()} were sent one at a time and each settled before the next. Read the last answer: it can only use earlier turns because they share one session.",
         Outcome.Conflict => "the stream showed a user event this queue never sent. From that moment no idle or answer could be safely attributed to our command, so the queue stopped instead of guessing. Notice there was no end_turn idle between our answer and the other writer's message.",
         _ => "a turn did not settle on idle/end_turn, so the queue refused to send the next message.",
     };
